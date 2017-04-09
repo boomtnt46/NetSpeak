@@ -38,12 +38,24 @@ namespace NetSpeak___Server
         {
             try
             {
+                string nick;
                 while (true)
                 {
                     Socket socket = (Socket)clientObj;
                     byte[] buffer = new byte[socket.Available];
                     socket.Receive(buffer);
-                    Console.WriteLine(Encoding.ASCII.GetString(buffer));
+                    switch (buffer[0])
+                    {
+                        case 0:
+                            Console.WriteLine(Encoding.ASCII.GetString(buffer));
+                            break;
+                        case 1:
+                            nick = Encoding.UTF8.GetString(buffer);
+                            break;
+                        
+                    }
+
+
                 }
             }
             catch (Exception e)
