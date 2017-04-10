@@ -29,6 +29,8 @@ namespace NetSpeak___Server
 
     class ServerSwitch
     {
+        private const byte nickVersionByte = 1;
+        private const byte messageVersionByte = 0;
         public void ConnectionManager(Socket ClientSocket)
         {
             new Thread(new ParameterizedThreadStart(this.ManageClient)).Start(ClientSocket);
