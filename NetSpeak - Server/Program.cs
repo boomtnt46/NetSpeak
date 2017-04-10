@@ -37,19 +37,22 @@ namespace NetSpeak___Server
 
             Server server = new Server();
             Task InitServer;
-            //InitServer =  new Task(new Action(() => { server.server(endpoint); }));
+            InitServer =  new Task(new Action(() => { server.server(endpoint); }));
 
             bool Continue = true;
             while (Continue)
             {
                 if (Console.ReadLine() == "start")
                 {
-                    //InitServer.Start();
-                    server.server(endpoint);
+                    //This one runs the server in a separate thread, making the console responisve.
+                    InitServer.Start();
+                    //This one runs the server in the current thread, making the console NOT responsive. USE JUST FOR DEBUGGING!
+                    //server.server(endpoint);
+                    
                 }
                 if (Console.ReadLine() == "stop")
                 {
-                    //InitServer.Dispose();
+                    InitServer.Dispose(); //Currently thows a exception, I need further investigation
                     
                 }
             }

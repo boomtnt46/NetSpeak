@@ -8,7 +8,7 @@ namespace NetSpeak___Server
 {
     class Server
     {
-        private Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.IP);
+        private Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         public void server(EndPoint endpoint)
         {
@@ -55,7 +55,12 @@ namespace NetSpeak___Server
                     }
                     else if (d == nickVersionByte)
                     {
+                        if (nick != "")
+                        {
+                            Console.WriteLine("User changer its nick: " + nick  + "  -------->  " + Encoding.UTF8.GetString(buffer, 1, buffer.Length - 1));
+                        }
                         nick = Encoding.UTF8.GetString(buffer, 1, buffer.Length - 1);
+
                     }
                 }
             }
