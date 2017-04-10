@@ -44,7 +44,7 @@ namespace NetSpeak___Server
                 {
                     while (socket.Available == 0)
                     {
-                        Thread.Sleep(150);
+                        Thread.Sleep(50);
                     }
                     buffer = new byte[socket.Available];
                     socket.Receive(buffer);
