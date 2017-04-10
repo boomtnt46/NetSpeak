@@ -31,19 +31,27 @@ namespace NetSpeak___Server
             Console.WriteLine("Port to bind the server to: ");
             int port = int.Parse(Console.ReadLine());
 
+            Console.WriteLine("Type 'start' to start the server");
+
             IPEndPoint endpoint = new IPEndPoint(ip, port);
 
             Server server = new Server();
             Task InitServer;
-            InitServer =  new Task(new Action(() => { server.server(endpoint); }));
-            if (Console.ReadLine() == "start")
+            //InitServer =  new Task(new Action(() => { server.server(endpoint); }));
+
+            bool Continue = true;
+            while (Continue)
             {
-                InitServer.Start();
-                //Task.Run(new Action(AsynchronousSocketListener.StartListening));
-            }
-            if (Console.ReadLine() == "stop")
-            {
-                
+                if (Console.ReadLine() == "start")
+                {
+                    //InitServer.Start();
+                    server.server(endpoint);
+                }
+                if (Console.ReadLine() == "stop")
+                {
+                    //InitServer.Dispose();
+                    
+                }
             }
         }
     }

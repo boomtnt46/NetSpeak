@@ -24,9 +24,6 @@ namespace NetSpeak___Server
         }
     }
 
- 
-
-
     class ServerSwitch
     {
         private const byte nickVersionByte = 1;
@@ -40,24 +37,26 @@ namespace NetSpeak___Server
         {
             try
             {
-                string nick;
+                byte[] buffer;
+                Socket socket = (Socket)clientObj;
+                string nick = "";
                 while (true)
                 {
-                    Socket socket = (Socket)clientObj;
-                    byte[] buffer = new byte[socket.Available];
-                    socket.Receive(buffer);
-                    switch (buffer[0])
+                    while (socket.Available == 0)
                     {
-                        case 0:
-                            Console.WriteLine(Encoding.ASCII.GetString(buffer));
-                            break;
-                        case 1:
-                            nick = Encoding.UTF8.GetString(buffer);
-                            break;
-                        
+                        Thread.Sleep(150);
                     }
-
-
+                    buffer = new byte[socket.Available];
+                    socket.Receive(buffer);
+                    byte d = (byte)buffer.GetValue(0);
+                    if (d == messageVersionByte)
+                    {
+                        Console.WriteLine(nick + ":" + Encoding.UTF8.GetString(buffer, 1, buffer.Length - 1));
+                    }
+                    else if (d == nickVersionByte)
+                    {
+                        nick = Encoding.UTF8.GetString(buffer, 1, buffer.Length - 1);
+                    }
                 }
             }
             catch (Exception e)
