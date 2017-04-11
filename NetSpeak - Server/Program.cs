@@ -45,9 +45,9 @@ namespace NetSpeak___Server
                 if (Console.ReadLine() == "start")
                 {
                     //This one runs the server in a separate thread, making the console responisve.
-                    InitServer.Start();
+                    //InitServer.Start();
                     //This one runs the server in the current thread, making the console NOT responsive. USE JUST FOR DEBUGGING!
-                    //server.server(endpoint);
+                    server.server(endpoint);
                     
                 }
                 if (Console.ReadLine() == "stop")
