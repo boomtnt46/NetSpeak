@@ -96,7 +96,6 @@ namespace NetSpeak___Server
                         if (e is SocketException)
                         {
                             Console.WriteLine(e.Message);
-                            Environment.Exit(0);
                         }
                         else
                         {
@@ -130,7 +129,7 @@ namespace NetSpeak___Server
             {
                 list[clientsNumber].Send(Encoding.UTF8.GetBytes(message));
             }
-            //Console.WriteLine("Message transmitted!");
+            Console.WriteLine("Message transmitted!");
         }
     }
 }
