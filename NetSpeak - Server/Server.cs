@@ -4,63 +4,67 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NetSpeak___Server
 {
     class Server
     {
+        //declaration of variables
         private Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        private Propagate prop = new Propagate();
+        private Propagate propagate = new Propagate();
+        private int clientNumber = 1;
 
+        //Constants declaration
+        private const byte messagevByte = 0;
+        private const byte nickvByte = 1;
+        private const byte pingvByte = 2;
+
+        //methods
         public void server(EndPoint endpoint)
         {
             listener.Bind(endpoint);
             listener.Listen(100);
-            int num = 1;
             while (true)
             {
-                /*new ServerSwitch().*/ConnectionManager(this.listener.Accept());
-                Console.WriteLine("New client connected: {0}", num);
-                num++;
+                CallConnectionHandler(listener.Accept());
+                Console.WriteLine("New client connected: {0}", clientNumber);
+                clientNumber++;
                 
             }
         }
-    //}
 
-    //class ServerSwitch
-    //{
-        private const byte nickVersionByte = 1;
-        private const byte messageVersionByte = 0;
-        public void ConnectionManager(Socket ClientSocket)
+
+        public async void CallConnectionHandler(Socket ClientSocket)
         {
-            List<Object> list = new List<object>();
-            list.Add(ClientSocket);
-            list.Add(prop);
-            new Thread(new ParameterizedThreadStart(ManageClient)).Start(list);
+            await ConnectionHandler(ClientSocket, propagate);
+            Console.Write("1");
         }
 
-        private void ManageClient(object general)
+        private Task ConnectionHandler(Socket client, Propagate propagate)
         {
-            try
+            string nick = "";
+
+            byte[] buffer;
+            Socket socket = client;
+
+            DateTime keepAlive = DateTime.Now;
+
+            propagate.list.Add(socket);
+            return Task.Run(() =>
             {
-                List<Object> ls = (List<Object>)general;
-                Propagate propagate = (Propagate)ls[1];
-                byte[] buffer;
-                Socket socket = (Socket) ls[0];
-                propagate.list.Add(socket);
-                string nick = "";
-                while (true)
+                try
                 {
-                    try
+                    while (true)
                     {
-                        buffer = new byte[4096];
+                        buffer = new byte[4096]; //Max message size
                         socket.Receive(buffer);
 
                         byte versionByte = (byte)buffer.GetValue(0);
-                        if (versionByte == messageVersionByte)
+                        if (versionByte == messagevByte)
                         {
-                            
-                            Byte[] messageLengthBytes = new byte[2];
+
+                            byte[] messageLengthBytes = new byte[2];
                             Buffer.BlockCopy(buffer, 1, messageLengthBytes, 0, 2);
                             int length = BitConverter.ToInt16(messageLengthBytes, 0); //the length of bytes of the message
 
@@ -71,11 +75,11 @@ namespace NetSpeak___Server
                             Console.WriteLine(message);
                             propagate.PropagateMessages(message);
                         }
-                        else if (versionByte == nickVersionByte)
+                        else if (versionByte == nickvByte)
                         {
                             Byte[] messageLengthBytes = new byte[2];
                             Buffer.BlockCopy(buffer, 1, messageLengthBytes, 0, 2);
-                            int length = (int) BitConverter.ToInt16(messageLengthBytes, 0);
+                            int length = (int)BitConverter.ToInt16(messageLengthBytes, 0);
 
                             byte[] messageBytes = new byte[length];
                             Buffer.BlockCopy(buffer, 3, messageBytes, 0, length);
@@ -89,32 +93,34 @@ namespace NetSpeak___Server
                             }
                             nick = newNick;
                         }
-
+                        else if (versionByte == pingvByte)
+                        {
+                            keepAlive = DateTime.Now;
+                        }
                     }
-                    catch (Exception e)
+                }
+                catch (Exception e)
+                {
+                    if (e is SocketException && keepAlive.Second + 10 < DateTime.Now.Second)
                     {
-                        if (e is SocketException)
-                        {
-                            Console.WriteLine(e.Message);
-                        }
-                        else
-                        {
-                            Console.WriteLine(e.ToString());
-                        }
+                        Console.Write("Client {0} disconnected", nick);
+                        socket.Close();
+                        return;
+                    }
+                    if (e is SocketException)
+                    {
+                        Console.WriteLine(e.Message + ". (lost connection (the client probably disconnected)) : " + nick);
+                        socket.Close();
+                        return;
+                    }
+                    else
+                    {
+                        Console.WriteLine(e.ToString());
+                        socket.Close();
+                        return;
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                if (e is SocketException)
-                {
-                    Console.WriteLine(e.Message);
-                }
-                else
-                {
-                    Console.WriteLine(e.ToString());
-                }
-            }
+            });
         }
     }
 
@@ -129,7 +135,7 @@ namespace NetSpeak___Server
             {
                 list[clientsNumber].Send(Encoding.UTF8.GetBytes(message));
             }
-            Console.WriteLine("Message transmitted!");
+            //Console.WriteLine("Message transmitted!");
         }
     }
 }
