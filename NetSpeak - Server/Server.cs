@@ -80,18 +80,31 @@ namespace NetSpeak___Server
                 }
                 catch (Exception e)
                 {
-                    if (e is SocketException && keepAlive.Second + 10 < DateTime.Now.Second)
+                    if (e is SocketException && keepAlive.Second + 10 > DateTime.Now.Second)
                     {
-                        Console.Write("Client {0} disconnected", nick);
+                        Console.WriteLine(e.ToString());
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.Write("Client '{0}' disconnected", nick);
+                        Console.ForegroundColor = ConsoleColor.White;
+                        socket.Shutdown(SocketShutdown.Both);
+
+                        socket.Disconnect(true);
                         socket.Close();
+
                         clientNumber--;
 
                         return;
                     }
                     else if (e is SocketException)
                     {
-                        Console.WriteLine(e.Message + ". (Lost connection (the client {0} probably suffered an unexpected error)) No ping from {0} was received in the last 10 seconds.", nick);
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Lost connection with a client. The client '{0}' probably suffered an unexpected error. {1}No ping from '{0}' was received in the last 10 seconds.", nick, Environment.NewLine);
+                        Console.ForegroundColor = ConsoleColor.White;
+                        socket.Shutdown(SocketShutdown.Both);
+
+                        socket.Disconnect(true);
                         socket.Close();
+
                         clientNumber--;
 
                         return;
@@ -99,6 +112,9 @@ namespace NetSpeak___Server
                     else
                     {
                         Console.WriteLine(e.ToString());
+                        socket.Shutdown(SocketShutdown.Both);
+
+                        socket.Disconnect(true);
                         socket.Close();
                         clientNumber--;
 

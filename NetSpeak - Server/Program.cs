@@ -11,30 +11,60 @@ namespace NetSpeak___Server
     {
         static void Main(string[] args)
         {
+            IPAddress ip = IPAddress.None;
+            int port = 0;
+
             bool autostart = false;
             if (args[0] == "-autostart")
             {
                 autostart = true;
             }
+            if (args.Length >= 2)
+            {
+                if (args[1].Contains("-ip="))
+                {
+                    ip = IPAddress.Parse(args[1].Substring(args[1].IndexOf('=') + 1));
+                }
+                if (args.Length >= 3)
+                {
+                    if (args[2].Contains("-port="))
+                    {
+                        port = int.Parse(args[2].Substring(args[2].IndexOf('=') + 1));
+                    }
+                }
+            }
+            
             Console.WriteLine("Welcome to NetSpeak server");
             Console.WriteLine("Server offline...");
-
-            Console.WriteLine("IP to bind the server to (type 0 to listen on any ip): ");
-            string response = Console.ReadLine();
-
-            IPAddress ip;
-
-            if (response == "0")
+            if (ip == IPAddress.None)
             {
-                ip = IPAddress.Any;
+                Console.WriteLine("IP to bind the server to (type 0 to listen on any ip): ");
+                string response = Console.ReadLine();
+
+                if (response == "0")
+                {
+                    ip = IPAddress.Any;
+                }
+                else
+                {
+                    ip = IPAddress.Parse(response);
+                }
             }
             else
             {
-                ip = IPAddress.Parse(response);
+                Console.WriteLine("Ip address alredy set");
             }
 
-            Console.WriteLine("Port to bind the server to: ");
-            int port = int.Parse(Console.ReadLine());
+            if (port == 0)
+            {
+                Console.WriteLine("Port to bind the server to: ");
+                port = int.Parse(Console.ReadLine());
+            }
+            else
+            {
+                Console.WriteLine("Port alredy set");
+            }
+            
 
             IPEndPoint endpoint = new IPEndPoint(ip, port);
 
@@ -47,6 +77,13 @@ namespace NetSpeak___Server
             {
                 CallServer(endpoint);
                 Console.WriteLine("Server starting...");
+                while (true)
+                {
+                    if (Console.ReadLine() == "stop")
+                    {
+                        Environment.Exit(1);
+                    }
+                }
             }
 
             while (true)
