@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Net;
 using System.Threading.Tasks;
-
+using System.Security;
 namespace NetSpeak___Server
 {
     class Program
@@ -13,26 +13,42 @@ namespace NetSpeak___Server
         {
             IPAddress ip = IPAddress.None;
             int port = 0;
+            SecureString password = new SecureString();
 
             bool autostart = false;
-            if (args[0] == "-autostart")
+            if (args.Length != 0)
             {
-                autostart = true;
-            }
-            if (args.Length >= 2)
-            {
-                if (args[1].Contains("-ip="))
+                if (args[0] == "-autostart")
                 {
-                    ip = IPAddress.Parse(args[1].Substring(args[1].IndexOf('=') + 1));
+                    autostart = true;
                 }
-                if (args.Length >= 3)
+                if (args.Length >= 2)
                 {
-                    if (args[2].Contains("-port="))
+                    if (args[1].Contains("-ip="))
                     {
-                        port = int.Parse(args[2].Substring(args[2].IndexOf('=') + 1));
+                        ip = IPAddress.Parse(args[1].Substring(args[1].IndexOf('=') + 1));
                     }
-                }
+                    if (args.Length >= 3)
+                    {
+                        if (args[2].Contains("-port="))
+                        {
+                            port = int.Parse(args[2].Substring(args[2].IndexOf('=') + 1));
+                        }
+                        if (args.Length >= 4)
+                        {
+                            if (args[3].Contains("-password="))
+                            {
+                                 foreach (char c in args[3].Substring(args[3].IndexOf('=') + 1))
+                                {
+                                    password.AppendChar(c);
+                                }
+                            }
+                        }
+                    }
+                } 
             }
+            
+
             
             Console.WriteLine("Welcome to NetSpeak server");
             Console.WriteLine("Server offline...");
@@ -65,6 +81,37 @@ namespace NetSpeak___Server
                 Console.WriteLine("Port alredy set");
             }
             
+            if (password == null)
+            {
+                Console.WriteLine("Do you want to enter a password? Press enter if not:");
+                string temp;
+                temp = Console.ReadLine();
+                int tries = 0;
+                while (tries < 3)
+                {
+                    if (temp != String.Empty)
+                    {
+                        Console.WriteLine("Type the password again:");
+                        if (temp == Console.ReadLine())
+                        {
+                            foreach (char c in temp)
+                            {
+                                password.AppendChar(c);
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("The password do not match! {0}Retry");
+                            tries++;
+                        }
+                    }
+                }
+                temp = null;
+                if (password == null)
+                {
+                    Console.WriteLine("Too many failures; password not set!");
+                }
+            }
 
             IPEndPoint endpoint = new IPEndPoint(ip, port);
 
@@ -75,7 +122,7 @@ namespace NetSpeak___Server
             }
             else
             {
-                CallServer(endpoint);
+                CallServer(endpoint, password);
                 Console.WriteLine("Server starting...");
                 while (true)
                 {
@@ -91,7 +138,7 @@ namespace NetSpeak___Server
                 string input = Console.ReadLine();
                 if (input == "start")
                 {
-                    CallServer(endpoint);
+                    CallServer(endpoint, password);
                     Console.WriteLine("Server starting...");
                 }
                 else if (input == "stop")
@@ -102,10 +149,10 @@ namespace NetSpeak___Server
             }
         }
 
-        private static async void CallServer(IPEndPoint e)
+        private static async void CallServer(IPEndPoint e, SecureString pass)
         {
             Server server = new Server();
-            await server.server(e);
+            await server.server(e, pass);
 
         }
     }

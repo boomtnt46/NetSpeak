@@ -4,7 +4,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Collections.Generic;
+using System.Security;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace NetSpeak___Server
 {
@@ -12,17 +14,25 @@ namespace NetSpeak___Server
     {
         //declaration of variables
         private Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        private static SecureString password;
         private Propagate propagate = new Propagate();
         private int clientNumber = 1;
+        private bool requirePassword;
 
         //Constants declaration
         private const byte messagevByte = 0;
         private const byte nickvByte = 1;
         private const byte pingvByte = 2;
+        private const byte passvByte = 3;
 
         //methods
-        public Task server(EndPoint endpoint)
+        public Task server(EndPoint endpoint, SecureString pass = null)
         {
+            password = pass;
+            if (pass != null)
+            {
+                requirePassword = true;
+            }
             return Task.Run(() =>
             {
                 listener.Bind(endpoint);
@@ -45,9 +55,12 @@ namespace NetSpeak___Server
 
         private Task ConnectionHandler(Socket client, Propagate propagate)
         {
+            bool authenticated = false;
+
             string nick = "";
 
             byte[] buffer;
+            
             Socket socket = client;
 
             DateTime keepAlive = DateTime.Now;
@@ -61,6 +74,29 @@ namespace NetSpeak___Server
                     {
                         buffer = new byte[4096]; //Max message size
                         socket.Receive(buffer);
+                        if (requirePassword)
+                        {
+                            for (int x = 0; x < 3; x++)
+                            {
+                                if (!authenticated)
+                                {
+                                    buffer = new byte[4096]; //Max message size
+                                    socket.Receive(buffer);
+                                    authenticated = ReceivePass(buffer, socket); //If true, allow user
+                                }
+                                else
+                                {
+
+                                    socket.Shutdown(SocketShutdown.Both);
+
+                                    socket.Disconnect(true);
+                                    socket.Close();
+
+                                    clientNumber--;
+                                    return;
+                                }
+                            }
+                        }
 
                         byte versionByte = (byte)buffer.GetValue(0);
                         if (versionByte == messagevByte)
@@ -74,7 +110,6 @@ namespace NetSpeak___Server
                         else if (versionByte == pingvByte)
                         {
                             keepAlive = DateTime.Now;
-
                         }
                     }
                 }
@@ -124,11 +159,36 @@ namespace NetSpeak___Server
             });
         }
 
+        private static bool ReceivePass(byte[] buffer, Socket socket)
+        {
+            Byte[] messageLengthBytes = new byte[2];
+            Buffer.BlockCopy(buffer, 1, messageLengthBytes, 0, 2);
+            int length = BitConverter.ToInt16(messageLengthBytes, 0);
+
+            byte[] messageBytes = new byte[length];
+            Buffer.BlockCopy(buffer, 3, messageBytes, 0, length);
+
+            SecureString pass = new SecureString();
+            foreach (char c in  Encoding.UTF8.GetString(messageBytes))
+            {
+                pass.AppendChar(c);
+            }
+            if (pass != password)
+            {
+                //TODO: Tell client that he entered an invalid password
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         private static string ReceiveNick(Propagate propagate, string nick, byte[] buffer)
         {
             Byte[] messageLengthBytes = new byte[2];
             Buffer.BlockCopy(buffer, 1, messageLengthBytes, 0, 2);
-            int length = (int)BitConverter.ToInt16(messageLengthBytes, 0);
+            int length = BitConverter.ToInt16(messageLengthBytes, 0);
 
             byte[] messageBytes = new byte[length];
             Buffer.BlockCopy(buffer, 3, messageBytes, 0, length);
